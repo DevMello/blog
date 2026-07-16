@@ -1,0 +1,132 @@
+---
+import type { Accent } from "../site.config";
+
+interface Props {
+  seed: string;
+  accent?: Accent;
+}
+
+const { seed, accent = "orange" } = Astro.props;
+
+/** Small deterministic PRNG so a given entry always renders the same artwork. */
+function makeRandom(seedStr: string) {
+  let h = 2166136261;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return () => {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    return ((h >>> 0) % 10000) / 10000;
+  };
+}
+
+const rand = makeRandom(seed);
+const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
+
+const inks = ["var(--c-dark)", "var(--c-green)", "var(--c-plum)"] as const;
+const fills = [
+  "var(--c-orange)",
+  "var(--c-blue)",
+  "var(--c-pink)",
+  "var(--c-purple)",
+  "var(--c-yellow)",
+  "var(--c-green-soft)",
+] as const;
+
+const shapes = ["circle", "arc", "square", "cross", "stripes", "blob"] as const;
+
+// A loose 4x3 grid of shapes; each cell either holds a shape or stays empty.
+const cells = Array.from({ length: 12 }, (_, i) => {
+  const col = i % 4;
+  const row = Math.floor(i / 4);
+  return {
+    x: col * 40 + 20,
+    y: row * 40 + 20,
+    shape: pick(shapes),
+    fill: pick(fills),
+    ink: pick(inks),
+    r: 12 + rand() * 8,
+    rot: Math.floor(rand() * 360),
+    show: rand() > 0.28,
+  };
+}).filter((c) => c.show);
+---
+
+<svg
+  class="pattern"
+  viewBox="0 0 160 120"
+  preserveAspectRatio="xMidYMid slice"
+  role="presentation"
+  data-accent={accent}
+>
+  <rect width="160" height="120" fill="var(--accent)" opacity="0.35"></rect>
+
+  {
+    cells.map((c) => (
+      <g transform={`translate(${c.x} ${c.y}) rotate(${c.rot})`}>
+        {c.shape === "circle" && <circle r={c.r} fill={c.fill} stroke={c.ink} stroke-width="1.5" />}
+
+        {c.shape === "arc" && (
+          <path
+            d={`M ${-c.r} 0 A ${c.r} ${c.r} 0 0 1 ${c.r} 0 Z`}
+            fill={c.fill}
+            stroke={c.ink}
+            stroke-width="1.5"
+          />
+        )}
+
+        {c.shape === "square" && (
+          <rect
+            x={-c.r}
+            y={-c.r}
+            width={c.r * 2}
+            height={c.r * 2}
+            rx="3"
+            fill={c.fill}
+            stroke={c.ink}
+            stroke-width="1.5"
+          />
+        )}
+
+        {c.shape === "cross" && (
+          <g stroke={c.ink} stroke-width="2.5" stroke-linecap="round">
+            <line x1={-c.r} y1="0" x2={c.r} y2="0" />
+            <line x1="0" y1={-c.r} x2="0" y2={c.r} />
+          </g>
+        )}
+
+        {c.shape === "stripes" && (
+          <g stroke={c.ink} stroke-width="1.5" stroke-linecap="round">
+            {[-6, -2, 2, 6].map((o) => (
+              <line x1={-c.r} y1={o} x2={c.r} y2={o} />
+            ))}
+          </g>
+        )}
+
+        {c.shape === "blob" && (
+          <path
+            d={`M0,${-c.r} C ${c.r},${-c.r} ${c.r},${c.r} 0,${c.r} C ${-c.r},${c.r} ${-c.r},${-c.r} 0,${-c.r} Z`}
+            fill={c.fill}
+            stroke={c.ink}
+            stroke-width="1.5"
+          />
+        )}
+      </g>
+    ))
+  }
+</svg>
+
+<style>
+  .pattern {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--c-beige);
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  :global(.card:hover) .pattern { transform: scale(1.06) rotate(-1deg); }
+</style>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://devmello.dev/sitemap-index.xml

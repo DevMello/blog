@@ -1,0 +1,91 @@
+---
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Card from "../../components/Card.astro";
+import { getAllEntries, tagSlug, type AnyEntry } from "../../lib/content";
+import { accentFor } from "../../site.config";
+
+export const getStaticPaths = (async () => {
+  const { combined } = await getAllEntries();
+
+  // Group by slug so "Web Dev" and "web-dev" land on one page.
+  const groups = new Map<string, { label: string; entries: AnyEntry[] }>();
+  for (const entry of combined) {
+    for (const tag of entry.data.tags) {
+      const slug = tagSlug(tag);
+      if (!groups.has(slug)) groups.set(slug, { label: tag, entries: [] });
+      groups.get(slug)!.entries.push(entry);
+    }
+  }
+
+  return [...groups.entries()].map(([slug, { label, entries }]) => ({
+    params: { tag: slug },
+    props: { label, entries },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  label: string;
+  entries: AnyEntry[];
+}
+
+const { label, entries } = Astro.props;
+const accent = accentFor(label);
+---
+
+<BaseLayout title={`Tagged “${label}”`} description={`Everything tagged ${label}.`}>
+  <section class="page-head" data-accent={accent}>
+    <div class="wrap">
+      <a href="/blog" class="back">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path
+            d="M13 7H1M1 7l5-5M1 7l5 5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        All writing
+      </a>
+      <p class="eyebrow">
+        {entries.length}
+        {entries.length === 1 ? "entry" : "entries"}
+      </p>
+      <h1 class="display page-title">
+        <span class="chip">{label}</span>
+      </h1>
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="card-grid">
+      {entries.map((entry) => <Card entry={entry} />)}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-head { padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--fs-sm);
+    color: var(--c-muted);
+    margin-bottom: 1.5rem;
+    transition: color 0.2s, gap 0.2s;
+  }
+  .back:hover { color: var(--c-dark); gap: 0.75rem; }
+
+  .page-title { margin-top: 1rem; }
+
+  .chip {
+    display: inline-block;
+    background: var(--accent);
+    border: var(--stroke) solid var(--c-dark);
+    border-radius: var(--radius);
+    padding: 0.1em 0.35em;
+    transform: rotate(-1.5deg);
+  }
+</style>

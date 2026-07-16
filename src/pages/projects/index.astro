@@ -1,0 +1,100 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Card from "../../components/Card.astro";
+import { getProjects } from "../../lib/content";
+
+const projects = await getProjects();
+
+const order = ["building", "shipped", "exploring", "archived"] as const;
+const groups = order
+  .map((status) => ({
+    status,
+    items: projects.filter((p) => p.data.status === status),
+  }))
+  .filter((g) => g.items.length > 0);
+
+const blurbs: Record<string, string> = {
+  building: "Actively in progress right now.",
+  shipped: "Out in the world and working.",
+  exploring: "Early experiments and half-formed ideas.",
+  archived: "Retired, but kept here for the record.",
+};
+---
+
+<BaseLayout title="Projects" description="Things I'm building, have shipped, or am still poking at.">
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">{projects.length} {projects.length === 1 ? "project" : "projects"}</p>
+      <h1 class="display page-title">Projects</h1>
+      <p class="lead page-lead">Things I'm building, things I've shipped, and things I'm still poking at.</p>
+    </div>
+  </section>
+
+  {
+    projects.length > 0 ? (
+      groups.map((group) => (
+        <section class="section wrap" aria-labelledby={`group-${group.status}`}>
+          <div class="section-head">
+            <div>
+              <h2 id={`group-${group.status}`} class="section-title">
+                {group.status}
+              </h2>
+              <p class="muted section-blurb">{blurbs[group.status]}</p>
+            </div>
+            <span class="count">{group.items.length}</span>
+          </div>
+          <div class="card-grid">
+            {group.items.map((project) => (
+              <Card entry={project} />
+            ))}
+          </div>
+        </section>
+      ))
+    ) : (
+      <section class="section wrap">
+        <p class="empty">
+          No projects yet. Drop a markdown file into <code>src/content/projects/</code> to get started.
+        </p>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .page-head { padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+  .page-title { margin-top: 1rem; }
+  .page-lead { margin-top: 1.5rem; color: var(--c-muted); }
+
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: var(--stroke) solid var(--c-dark);
+  }
+
+  .section-title {
+    font-size: var(--fs-h2);
+    letter-spacing: -0.04em;
+    text-transform: capitalize;
+  }
+
+  .section-blurb { font-size: var(--fs-sm); margin-top: 0.35rem; }
+
+  .count {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--c-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .empty {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--c-muted);
+    border: var(--stroke) dashed var(--c-dark);
+    border-radius: var(--radius);
+  }
+</style>

@@ -1,0 +1,35 @@
+---
+import type { Accent } from "../site.config";
+
+interface Props {
+  items: string[];
+  accent?: Accent;
+  /** Seconds for one full loop. Lower is faster. */
+  duration?: number;
+}
+
+const { items, accent = "orange", duration = 40 } = Astro.props;
+
+// Two identical tracks side by side make the translateX(-100%) loop seamless.
+const tracks = [0, 1];
+---
+
+<div class="marquee" data-accent={accent} style={`--marquee-dur: ${duration}s`} aria-hidden="true">
+  {
+    tracks.map(() => (
+      <div class="marquee__track">
+        {items.map((item) => (
+          <span class="marquee__item">
+            {item}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8L8 0z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+        ))}
+      </div>
+    ))
+  }
+</div>

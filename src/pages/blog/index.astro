@@ -1,0 +1,144 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Card from "../../components/Card.astro";
+import { getPosts, tagSlug } from "../../lib/content";
+
+const posts = await getPosts();
+
+// Tag facets for the filter row, most used first.
+const counts = new Map<string, number>();
+for (const post of posts) {
+  for (const tag of post.data.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+}
+const tags = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+---
+
+<BaseLayout
+  title="Writing"
+  description="Notes, essays and build logs on the things I'm working on."
+>
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">{posts.length} {posts.length === 1 ? "post" : "posts"}</p>
+      <h1 class="display page-title">Writing</h1>
+      <p class="lead page-lead">Notes, essays and build logs — mostly written while the thing was still on fire.</p>
+    </div>
+  </section>
+
+  <section class="section wrap" aria-labelledby="all-posts">
+    <h2 id="all-posts" class="sr-only">All posts</h2>
+
+    {
+      tags.length > 0 && (
+        <div class="filters">
+          <ul class="tag-row" role="list">
+            <li>
+              <button class="tag filter" data-filter="*" aria-pressed="true" type="button">
+                Everything
+              </button>
+            </li>
+            {tags.map(([tag, count]) => (
+              <li>
+                <button class="tag filter" data-filter={tagSlug(tag)} aria-pressed="false" type="button">
+                  {tag} <span class="muted">&nbsp;{count}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    {
+      posts.length > 0 ? (
+        <div class="card-grid" id="post-grid">
+          {posts.map((post) => (
+            <div class="grid-item" data-tags={post.data.tags.map(tagSlug).join(" ")}>
+              <Card entry={post} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="empty">
+          No posts yet. Drop a markdown file into <code>src/content/blog/</code> to get started.
+        </p>
+      )
+    }
+
+    <p class="no-results" hidden>Nothing tagged that way yet.</p>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-head { padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+  .page-title { margin-top: 1rem; }
+  .page-lead { margin-top: 1.5rem; color: var(--c-muted); }
+
+  .filters { margin-bottom: 2.5rem; }
+
+  .filter { cursor: pointer; background: transparent; font-family: inherit; }
+  .filter:hover { background: var(--c-yellow); }
+  .filter[aria-pressed="true"] { background: var(--c-dark); color: var(--c-beige); }
+  .filter[aria-pressed="true"] .muted { color: var(--c-grey); }
+
+  .grid-item { display: flex; }
+  .grid-item > :global(*) { flex: 1; }
+  .grid-item[hidden] { display: none; }
+
+  .empty, .no-results {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--c-muted);
+    border: var(--stroke) dashed var(--c-dark);
+    border-radius: var(--radius);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>
+
+<script>
+  // Client-side tag filter. Without JS every post stays visible, which is the
+  // correct fallback — the filter is an enhancement, not the way in.
+  const buttons = document.querySelectorAll<HTMLButtonElement>(".filter");
+  const items = document.querySelectorAll<HTMLElement>(".grid-item");
+  const noResults = document.querySelector<HTMLElement>(".no-results");
+
+  function apply(filter: string) {
+    let shown = 0;
+    items.forEach((item) => {
+      const tags = (item.dataset.tags ?? "").split(" ");
+      const match = filter === "*" || tags.includes(filter);
+      item.hidden = !match;
+      if (match) shown++;
+    });
+    if (noResults) noResults.hidden = shown > 0;
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const filter = btn.dataset.filter!;
+      buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      apply(filter);
+
+      // Reflect the filter in the URL so it survives a reload or share.
+      const url = new URL(window.location.href);
+      if (filter === "*") url.searchParams.delete("tag");
+      else url.searchParams.set("tag", filter);
+      history.replaceState(null, "", url);
+    });
+  });
+
+  // Honour ?tag= on load.
+  const initial = new URL(window.location.href).searchParams.get("tag");
+  if (initial) {
+    const btn = [...buttons].find((b) => b.dataset.filter === initial);
+    if (btn) btn.click();
+  }
+</script>

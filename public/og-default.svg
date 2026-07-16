@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#fff7f0"/>
+  <circle cx="1050" cy="120" r="150" fill="#ffb1eb"/>
+  <circle cx="1150" cy="520" r="110" fill="#f9e283"/>
+  <circle cx="930" cy="470" r="70" fill="#cdb7f1"/>
+  <g font-family="Space Grotesk, Helvetica, Arial, sans-serif" fill="#0b1311">
+    <circle cx="90" cy="96" r="14" fill="#ff643c" stroke="#0b1311" stroke-width="3"/>
+    <text x="118" y="106" font-size="34" font-weight="600">DevMello</text>
+    <text x="80" y="330" font-size="86" font-weight="600" letter-spacing="-3">Building things,</text>
+    <text x="80" y="425" font-size="86" font-weight="600" letter-spacing="-3">writing it down.</text>
+    <text x="80" y="530" font-size="30" fill="#858581">Projects, notes and build logs</text>
+  </g>
+  <rect x="1" y="1" width="1198" height="628" fill="none" stroke="#0b1311" stroke-width="3"/>
+</svg>

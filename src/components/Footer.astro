@@ -1,0 +1,83 @@
+---
+import { site } from "../site.config";
+import Marquee from "./Marquee.astro";
+
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <Marquee accent="green" items={[site.tagline, "Currently building", "Say hello", "Read the notes"]} />
+
+  <div class="footer__inner wrap">
+    <div class="footer__brand">
+      <p class="footer__title">{site.title}</p>
+      <p class="footer__tagline muted">{site.tagline}</p>
+    </div>
+
+    <nav class="footer__col" aria-label="Footer">
+      <p class="eyebrow">Explore</p>
+      <ul>
+        <li><a href="/">Home</a></li>
+        {site.nav.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <div class="footer__col">
+      <p class="eyebrow">Elsewhere</p>
+      <ul>
+        {site.social.map((s) => <li><a href={s.href}>{s.label}</a></li>)}
+        <li><a href={`mailto:${site.email}`}>Email</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer__bar wrap">
+    <p>© {year} {site.author}</p>
+    <p>Built with Astro</p>
+  </div>
+</footer>
+
+<style>
+  .footer { border-top: var(--stroke) solid var(--c-dark); margin-top: var(--section); }
+
+  .footer__inner {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 2rem;
+    padding-block: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .footer__title {
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .footer__tagline { margin-top: 0.75rem; max-width: 28ch; font-size: var(--fs-sm); }
+
+  .footer__col ul { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+
+  .footer__col a {
+    font-size: var(--fs-sm);
+    display: inline-block;
+    transition: transform 0.2s var(--ease-out), color 0.2s;
+  }
+  .footer__col a:hover { transform: translateX(4px); color: var(--c-orange); }
+
+  .footer__bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-block: 1.25rem;
+    border-top: 1.5px dashed var(--c-dark);
+    font-size: var(--fs-xs);
+    color: var(--c-muted);
+  }
+
+  @media (max-width: 44rem) {
+    .footer__inner { grid-template-columns: 1fr 1fr; }
+    .footer__brand { grid-column: 1 / -1; }
+  }
+</style>

@@ -1,0 +1,192 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Card from "../components/Card.astro";
+import Marquee from "../components/Marquee.astro";
+import { site } from "../site.config";
+import { getAllEntries, getTags, tagSlug } from "../lib/content";
+
+const { posts, projects } = await getAllEntries();
+const tags = await getTags();
+
+const featured = [...posts, ...projects].find((e) => e.data.featured);
+const recentPosts = posts.filter((p) => p !== featured).slice(0, 3);
+const recentProjects = projects.filter((p) => p !== featured).slice(0, 3);
+---
+
+<BaseLayout>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">{site.tagline}</p>
+      <h1 class="display hero__title">
+        I build <span class="hl hl--orange">things</span> and write about <span class="hl hl--blue"
+          >how</span
+        > they went.
+      </h1>
+      <p class="lead hero__lead">{site.description}</p>
+      <div class="hero__actions">
+        <a href="/blog" class="btn btn--solid" data-accent="orange">
+          Read the writing <span class="btn__arrow">→</span>
+        </a>
+        <a href="/projects" class="btn">See the projects <span class="btn__arrow">→</span></a>
+      </div>
+    </div>
+
+    <div class="hero__blobs" aria-hidden="true">
+      <span class="blob blob--1"></span>
+      <span class="blob blob--2"></span>
+      <span class="blob blob--3"></span>
+    </div>
+  </section>
+
+  <Marquee
+    items={["Writing", "Building", "Shipping", "Learning in public", "Notes from the workbench"]}
+    accent="yellow"
+    duration={35}
+  />
+
+  <!-- Featured -->
+  {
+    featured && (
+      <section class="section wrap" aria-labelledby="featured-title">
+        <div class="section-head">
+          <h2 id="featured-title" class="section-title">
+            Featured
+          </h2>
+        </div>
+        <Card entry={featured} wide />
+      </section>
+    )
+  }
+
+  <!-- Latest writing -->
+  {
+    recentPosts.length > 0 && (
+      <section class="section wrap" aria-labelledby="writing-title">
+        <div class="section-head">
+          <h2 id="writing-title" class="section-title">
+            Latest writing
+          </h2>
+          <a href="/blog" class="btn">
+            All posts <span class="btn__arrow">→</span>
+          </a>
+        </div>
+        <div class="card-grid">
+          {recentPosts.map((post) => (
+            <Card entry={post} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Projects -->
+  {
+    recentProjects.length > 0 && (
+      <section class="section wrap" aria-labelledby="projects-title">
+        <div class="section-head">
+          <h2 id="projects-title" class="section-title">
+            On the workbench
+          </h2>
+          <a href="/projects" class="btn">
+            All projects <span class="btn__arrow">→</span>
+          </a>
+        </div>
+        <div class="card-grid">
+          {recentProjects.map((project) => (
+            <Card entry={project} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Topics -->
+  {
+    tags.length > 0 && (
+      <section class="section wrap" aria-labelledby="topics-title">
+        <div class="section-head">
+          <h2 id="topics-title" class="section-title">
+            Browse by topic
+          </h2>
+        </div>
+        <ul class="tag-row" aria-label="All topics">
+          {tags.map((t) => (
+            <li>
+              <a href={`/tags/${t.slug}/`} class="tag">
+                {t.tag} <span class="muted">&nbsp;{t.count}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .hero {
+    position: relative;
+    padding-block: clamp(3rem, 9vw, 8rem);
+    overflow: hidden;
+  }
+
+  .hero > .wrap { position: relative; z-index: 2; }
+
+  .hero__title { max-width: 14ch; margin-top: 1.5rem; }
+
+  .hl { position: relative; white-space: nowrap; }
+
+  /* Hand-drawn highlight sweep behind key words */
+  .hl::before {
+    content: "";
+    position: absolute;
+    inset: 0.1em -0.15em 0.12em;
+    z-index: -1;
+    border-radius: 0.4em;
+    transform: rotate(-1.2deg);
+  }
+  .hl--orange::before { background: var(--c-orange); }
+  .hl--blue::before { background: var(--c-blue); }
+
+  .hero__lead { margin-top: 2rem; max-width: 42ch; color: var(--c-muted); }
+
+  .hero__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.5rem; }
+
+  /* Soft colour blobs drifting behind the hero */
+  .hero__blobs { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.55;
+    animation: drift 18s var(--ease-out) infinite alternate;
+  }
+
+  .blob--1 { width: 26rem; height: 26rem; right: -6rem; top: -6rem; background: var(--c-pink); }
+  .blob--2 { width: 20rem; height: 20rem; right: 12rem; bottom: -8rem; background: var(--c-yellow); animation-delay: -6s; }
+  .blob--3 { width: 16rem; height: 16rem; right: -3rem; bottom: 2rem; background: var(--c-purple); animation-delay: -12s; }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(-3rem, 2rem) scale(1.15); }
+  }
+
+  @media (max-width: 60rem) {
+    .hero__blobs { opacity: 0.5; }
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: var(--stroke) solid var(--c-dark);
+  }
+
+  .section-title { font-size: var(--fs-h2); letter-spacing: -0.04em; }
+</style>

@@ -1,0 +1,195 @@
+---
+import { site } from "../site.config";
+
+const path = Astro.url.pathname;
+const isActive = (href: string) => path === href || path.startsWith(href + "/");
+---
+
+<header class="header">
+  <div class="header__inner wrap">
+    <a href="/" class="logo" aria-label={`${site.title} — home`}>
+      <span class="logo__dot" aria-hidden="true"></span>
+      <span class="logo__text">{site.title}</span>
+    </a>
+
+    <nav class="nav" aria-label="Main">
+      <ul class="nav__list">
+        {
+          site.nav.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class="nav__link"
+                aria-current={isActive(item.href) ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <button class="burger" type="button" aria-expanded="false" aria-controls="mobile-nav">
+      <span class="burger__label">Menu</span>
+      <span class="burger__bars" aria-hidden="true"><span></span><span></span></span>
+    </button>
+  </div>
+
+  <div class="mobile-nav" id="mobile-nav" hidden>
+    <ul>
+      {
+        site.nav.map((item) => (
+          <li>
+            <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <ul class="mobile-nav__social">
+      {site.social.map((s) => <li><a href={s.href}>{s.label}</a></li>)}
+    </ul>
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: var(--stroke) solid var(--c-dark);
+  }
+
+  .header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: 4.5rem;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: var(--ls-tight);
+  }
+
+  .logo__dot {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    background: var(--c-orange);
+    border: 1.5px solid var(--c-dark);
+    transition: background var(--dur) var(--ease-out), transform var(--dur) var(--ease-spring);
+  }
+
+  .logo:hover .logo__dot { background: var(--c-pink); transform: scale(1.25) rotate(90deg); }
+
+  .nav__list {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav__link {
+    display: inline-block;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid transparent;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+  }
+
+  .nav__link:hover { border-color: var(--c-dark); background: var(--c-yellow); }
+  .nav__link[aria-current="page"] { background: var(--c-dark); color: var(--c-beige); border-color: var(--c-dark); }
+
+  .burger {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--c-dark);
+    background: transparent;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+    cursor: pointer;
+  }
+
+  .burger__bars { display: grid; gap: 4px; }
+  .burger__bars span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: var(--c-dark);
+    transition: transform 0.3s var(--ease-out);
+  }
+  .burger[aria-expanded="true"] .burger__bars span:first-child { transform: translateY(3px) rotate(45deg); }
+  .burger[aria-expanded="true"] .burger__bars span:last-child { transform: translateY(-3px) rotate(-45deg); }
+
+  .mobile-nav {
+    border-top: 1.5px solid var(--c-dark);
+    padding: 1rem var(--gutter) 1.5rem;
+    background: var(--bg);
+  }
+
+  .mobile-nav ul { list-style: none; margin: 0; padding: 0; }
+
+  .mobile-nav > ul > li > a {
+    display: block;
+    padding: 0.6rem 0;
+    font-size: var(--fs-h3);
+    font-weight: 600;
+    letter-spacing: var(--ls-tight);
+    border-bottom: 1.5px dashed var(--c-grey);
+  }
+
+  .mobile-nav > ul > li > a[aria-current="page"] { color: var(--c-orange); }
+
+  .mobile-nav__social {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: var(--fs-sm);
+  }
+  .mobile-nav__social a { text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 44rem) {
+    .nav { display: none; }
+    .burger { display: inline-flex; }
+  }
+</style>
+
+<script>
+  // Progressive enhancement: nav renders as plain links; JS only adds the toggle.
+  const burger = document.querySelector<HTMLButtonElement>(".burger");
+  const panel = document.querySelector<HTMLElement>("#mobile-nav");
+
+  burger?.addEventListener("click", () => {
+    const open = burger.getAttribute("aria-expanded") === "true";
+    burger.setAttribute("aria-expanded", String(!open));
+    if (panel) panel.hidden = open;
+  });
+
+  // Close the panel if the viewport grows past the mobile breakpoint.
+  const mq = window.matchMedia("(min-width: 44rem)");
+  mq.addEventListener("change", (e) => {
+    if (e.matches && panel) {
+      panel.hidden = true;
+      burger?.setAttribute("aria-expanded", "false");
+    }
+  });
+</script>

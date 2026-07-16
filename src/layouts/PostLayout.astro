@@ -1,0 +1,324 @@
+---
+import type { MarkdownHeading } from "astro";
+import BaseLayout from "./BaseLayout.astro";
+import TableOfContents from "../components/TableOfContents.astro";
+import Card from "../components/Card.astro";
+import Pattern from "../components/Pattern.astro";
+import { accentFor, site } from "../site.config";
+import { formatDate, isoDate, readTime, tagSlug, type AnyEntry } from "../lib/content";
+
+interface Props {
+  entry: AnyEntry;
+  headings: MarkdownHeading[];
+  related?: AnyEntry[];
+}
+
+const { entry, headings, related = [] } = Astro.props;
+const { data } = entry;
+
+const accent = data.accent ?? accentFor(entry.id);
+const isProject = entry.collection === "projects";
+const project = isProject ? (data as any) : null;
+
+const backHref = isProject ? "/projects" : "/blog";
+const backLabel = isProject ? "All projects" : "All writing";
+
+// Article structured data for search results.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": isProject ? "CreativeWork" : "BlogPosting",
+  headline: data.title,
+  description: data.description,
+  datePublished: isoDate(data.date),
+  ...(data.updated && { dateModified: isoDate(data.updated) }),
+  author: { "@type": "Person", name: site.author },
+  keywords: data.tags.join(", "),
+  url: new URL(Astro.url.pathname, Astro.site ?? "http://localhost:4321").toString(),
+};
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.cover}
+  type="article"
+  publishedTime={data.date}
+  modifiedTime={data.updated}
+  noindex={data.draft}
+>
+  <div class="progress" aria-hidden="true"><div class="progress__bar"></div></div>
+
+  <article data-accent={accent}>
+    <header class="post-head">
+      <div class="wrap">
+        <a href={backHref} class="back">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path
+              d="M13 7H1M1 7l5-5M1 7l5 5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+          {backLabel}
+        </a>
+
+        {data.draft && <p class="draft-flag">Draft — not listed publicly</p>}
+
+        <h1 class="post-title">{data.title}</h1>
+        <p class="lead post-lead">{data.description}</p>
+
+        <div class="post-meta">
+          <time datetime={isoDate(data.date)}>{formatDate(data.date, { month: "long" })}</time>
+          <span aria-hidden="true">·</span>
+          <span>{readTime(entry)}</span>
+          {
+            data.updated && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>Updated {formatDate(data.updated, { month: "long" })}</span>
+              </>
+            )
+          }
+          {
+            project && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span class="status-pill" data-accent={accent}>
+                  {project.status}
+                </span>
+              </>
+            )
+          }
+        </div>
+
+        {
+          data.tags.length > 0 && (
+            <ul class="tag-row post-tags" aria-label="Tags">
+              {data.tags.map((tag: string) => (
+                <li>
+                  <a href={`/tags/${tagSlug(tag)}/`} class="tag">
+                    {tag}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+
+        {
+          project && (project.repo || project.demo || project.stack.length > 0) && (
+            <div class="project-bar">
+              {project.stack.length > 0 && (
+                <p class="project-stack">
+                  <span class="muted">Built with</span> {project.stack.join(" · ")}
+                </p>
+              )}
+              <div class="project-links">
+                {project.demo && (
+                  <a href={project.demo} class="btn btn--solid" rel="noopener noreferrer" target="_blank">
+                    Live demo <span class="btn__arrow">↗</span>
+                  </a>
+                )}
+                {project.repo && (
+                  <a href={project.repo} class="btn" rel="noopener noreferrer" target="_blank">
+                    Source <span class="btn__arrow">↗</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          )
+        }
+      </div>
+
+      <div class="post-hero wrap">
+        <div class="post-hero__frame">
+          {
+            data.cover ? (
+              <img src={data.cover} alt={data.coverAlt ?? ""} width="1200" height="630" />
+            ) : (
+              <Pattern seed={entry.id} accent={accent} />
+            )
+          }
+        </div>
+      </div>
+    </header>
+
+    <div class="post-body wrap">
+      <aside class="post-aside">
+        <TableOfContents headings={headings} />
+      </aside>
+
+      <div class="prose">
+        <slot />
+      </div>
+    </div>
+  </article>
+
+  {
+    related.length > 0 && (
+      <section class="section related wrap" aria-labelledby="related-title">
+        <h2 id="related-title" class="related__title">
+          Keep reading
+        </h2>
+        <div class="card-grid">
+          {related.map((item) => (
+            <Card entry={item} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+</BaseLayout>
+
+<style>
+  /* Reading progress */
+  .progress {
+    position: fixed;
+    top: 4.5rem;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 40;
+    pointer-events: none;
+  }
+  .progress__bar {
+    height: 100%;
+    width: 100%;
+    background: var(--accent, var(--c-orange));
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    border-right: 1.5px solid var(--c-dark);
+  }
+
+  .post-head { padding-top: clamp(2rem, 5vw, 4rem); }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--c-muted);
+    margin-bottom: 1.5rem;
+    transition: color 0.2s, gap 0.2s;
+  }
+  .back:hover { color: var(--c-dark); gap: 0.75rem; }
+
+  .draft-flag {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--c-dark);
+    background: var(--c-yellow);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+
+  .post-title {
+    font-size: var(--fs-h1);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.04em;
+    max-width: 18ch;
+  }
+
+  .post-lead { margin-top: 1.25rem; max-width: 44ch; color: var(--c-muted); }
+
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    font-size: var(--fs-sm);
+    color: var(--c-muted);
+  }
+
+  .status-pill {
+    background: var(--accent);
+    color: var(--c-dark);
+    border: 1.5px solid var(--c-dark);
+    border-radius: var(--radius-pill);
+    padding: 0.1rem 0.7rem;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+  }
+
+  .post-tags { margin-top: 1.25rem; }
+
+  .project-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1.25rem;
+    border: var(--stroke) solid var(--c-dark);
+    border-radius: var(--radius);
+    background: var(--c-grey-light);
+  }
+  .project-stack { font-size: var(--fs-sm); }
+  .project-links { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .post-hero { margin-top: clamp(2rem, 4vw, 3rem); }
+  .post-hero__frame {
+    border: var(--stroke) solid var(--c-dark);
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 21 / 9;
+    background: var(--accent, var(--c-grey));
+  }
+  .post-hero__frame img { width: 100%; height: 100%; object-fit: cover; }
+
+  .post-body {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    padding-top: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  @media (max-width: 64rem) {
+    .post-body { grid-template-columns: minmax(0, 1fr); }
+    .post-aside { display: none; }
+  }
+
+  .related__title {
+    font-size: var(--fs-h2);
+    letter-spacing: -0.04em;
+    margin-bottom: 2rem;
+  }
+</style>
+
+<script>
+  // Reading progress bar tracks scroll through the article body.
+  const bar = document.querySelector<HTMLElement>(".progress__bar");
+  const article = document.querySelector<HTMLElement>(".prose");
+
+  if (bar && article) {
+    let ticking = false;
+
+    const update = () => {
+      const start = article.offsetTop;
+      const total = article.offsetHeight - window.innerHeight;
+      const progress = total > 0 ? (window.scrollY - start) / total : 1;
+      bar.style.transform = `scaleX(${Math.min(Math.max(progress, 0), 1)})`;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
+  }
+</script>

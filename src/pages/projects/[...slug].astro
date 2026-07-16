@@ -1,0 +1,39 @@
+---
+import { render } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import PostLayout from "../../layouts/PostLayout.astro";
+import { getProjects, type Project } from "../../lib/content";
+
+export const getStaticPaths = (async () => {
+  const projects = await getProjects();
+
+  return projects.map((project) => {
+    const scored = projects
+      .filter((p) => p.id !== project.id)
+      .map((p) => ({
+        project: p,
+        score: p.data.tags.filter((t) => project.data.tags.includes(t)).length,
+      }))
+      .sort(
+        (a, b) => b.score - a.score || b.project.data.date.valueOf() - a.project.data.date.valueOf()
+      );
+
+    return {
+      params: { slug: project.id },
+      props: { project, related: scored.slice(0, 3).map((s) => s.project) },
+    };
+  });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  project: Project;
+  related: Project[];
+}
+
+const { project, related } = Astro.props;
+const { Content, headings } = await render(project);
+---
+
+<PostLayout entry={project} headings={headings} related={related}>
+  <Content />
+</PostLayout>

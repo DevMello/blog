@@ -1,0 +1,38 @@
+---
+import { render } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import PostLayout from "../../layouts/PostLayout.astro";
+import { getPosts, type BlogPost } from "../../lib/content";
+
+export const getStaticPaths = (async () => {
+  const posts = await getPosts();
+
+  return posts.map((post) => {
+    // Related = shares the most tags, falling back to the newest others.
+    const scored = posts
+      .filter((p) => p.id !== post.id)
+      .map((p) => ({
+        post: p,
+        score: p.data.tags.filter((t) => post.data.tags.includes(t)).length,
+      }))
+      .sort((a, b) => b.score - a.score || b.post.data.date.valueOf() - a.post.data.date.valueOf());
+
+    return {
+      params: { slug: post.id },
+      props: { post, related: scored.slice(0, 3).map((s) => s.post) },
+    };
+  });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  post: BlogPost;
+  related: BlogPost[];
+}
+
+const { post, related } = Astro.props;
+const { Content, headings } = await render(post);
+---
+
+<PostLayout entry={post} headings={headings} related={related}>
+  <Content />
+</PostLayout>

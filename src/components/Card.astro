@@ -1,0 +1,109 @@
+---
+import { accentFor } from "../site.config";
+import { formatDate, isoDate, readTime, urlFor, type AnyEntry } from "../lib/content";
+import Pattern from "./Pattern.astro";
+
+interface Props {
+  entry: AnyEntry;
+  /** Renders a bigger card with the thumbnail alongside the text. */
+  wide?: boolean;
+}
+
+const { entry, wide = false } = Astro.props;
+const { data } = entry;
+
+const accent = data.accent ?? accentFor(entry.id);
+const href = urlFor(entry);
+const isProject = entry.collection === "projects";
+const status = isProject ? (data as any).status : null;
+---
+
+<article class:list={["card", { "card--wide": wide }]} data-accent={accent}>
+  <div class="card__thumb">
+    {
+      data.cover ? (
+        <img src={data.cover} alt={data.coverAlt ?? ""} loading="lazy" decoding="async" />
+      ) : (
+        <Pattern seed={entry.id} accent={accent} />
+      )
+    }
+  </div>
+
+  <div class="card__body">
+    <div class="card__meta">
+      <time datetime={isoDate(data.date)}>{formatDate(data.date)}</time>
+      <span aria-hidden="true">·</span>
+      {status ? <span class="card__status">{status}</span> : <span>{readTime(entry)}</span>}
+    </div>
+
+    <h3 class="card__title">
+      <a href={href} class="card__link">{data.title}</a>
+    </h3>
+
+    <p class="card__excerpt">{data.description}</p>
+
+    {
+      data.tags.length > 0 && (
+        <ul class="card__tags" aria-label="Tags">
+          {data.tags.slice(0, 3).map((tag: string) => (
+            <li>{tag}</li>
+          ))}
+        </ul>
+      )
+    }
+
+    <span class="card__more">
+      {isProject ? "See the build" : "Read it"}
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path
+          d="M1 13L13 1M13 1H4M13 1v9"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+  </div>
+</article>
+
+<style>
+  .card__body { display: flex; flex-direction: column; gap: 0.75rem; flex: 1; }
+
+  .card__status {
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+    font-weight: 600;
+    font-size: 0.65rem;
+  }
+
+  .card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .card__tags li {
+    font-size: var(--fs-xs);
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--c-dark);
+    line-height: 1.5;
+  }
+
+  /* Wide variant: thumbnail beside the text, used for featured entries. */
+  @media (min-width: 48rem) {
+    .card--wide {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 2rem;
+      padding: 1.75rem;
+      align-items: center;
+    }
+    .card--wide .card__thumb { aspect-ratio: 4 / 3; height: 100%; }
+    .card--wide .card__title { font-size: var(--fs-h2); }
+    .card--wide .card__excerpt { font-size: var(--fs-body); }
+  }
+</style>
