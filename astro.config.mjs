@@ -26,7 +26,14 @@ export default defineConfig({
             ariaHidden: "true",
             tabIndex: -1,
           },
-          content: { type: "text", value: "#" },
+          // An empty span, with the "#" glyph supplied by CSS. A text node here
+          // would be swept into Astro's heading list and show up in the TOC.
+          content: {
+            type: "element",
+            tagName: "span",
+            properties: { className: ["heading-anchor__glyph"] },
+            children: [],
+          },
         },
       ],
       [
