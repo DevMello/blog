@@ -40,6 +40,22 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
     <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
     <meta name="generator" content={Astro.generator} />
 
+    <!-- Runs before first paint: if the previous page left a transition
+         colour, cover the viewport with it so the new page never flashes.
+         The module script below collapses the cover once the page is in. -->
+    <script is:inline>
+      (function () {
+        try {
+          var c = sessionStorage.getItem("pt-color");
+          sessionStorage.removeItem("pt-color");
+          if (c && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            document.documentElement.style.setProperty("--pt-color", c);
+            document.documentElement.classList.add("pt-cover");
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <meta name="author" content={site.author} />
@@ -79,5 +95,89 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
       <slot />
     </main>
     <Footer />
+
+    <script>
+      // Page transitions: expand the accent colour over the viewport on
+      // click, hand the colour to the next page, collapse it there.
+      const html = document.documentElement;
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let navigating = false;
+
+      // Arriving covered (class set by the inline head script): collapse the
+      // colour into the centre of the page.
+      if (html.classList.contains("pt-cover")) {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            html.classList.replace("pt-cover", "pt-collapse");
+            const done = () => html.classList.remove("pt-collapse");
+            html.addEventListener("animationend", done, { once: true });
+            setTimeout(done, 900);
+          }),
+        );
+      }
+
+      document.addEventListener("click", (e) => {
+        if (reduced || navigating || e.defaultPrevented) return;
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+        const link = (e.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
+        if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+
+        const url = new URL(link.href, location.href);
+        if (url.origin !== location.origin) return;
+        // In-page anchors and non-HTML resources (rss.xml…) navigate as usual.
+        if (url.pathname === location.pathname && url.hash) return;
+        if (/\.(?!html?$)\w+$/.test(url.pathname)) return;
+
+        // Cards flood the screen with their accent; everything else uses the
+        // primary green. Expand from the accent element so the card's hover
+        // wash appears to keep growing.
+        const accentEl = link.closest("[data-accent]") as HTMLElement | null;
+        const color = getComputedStyle(accentEl ?? html)
+          .getPropertyValue(accentEl ? "--accent" : "--c-green")
+          .trim();
+        if (!color) return;
+
+        e.preventDefault();
+        navigating = true;
+
+        const rect = (accentEl ?? link).getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+        const overlay = document.createElement("div");
+        overlay.className = "pt-expand";
+        overlay.style.background = color;
+        overlay.style.clipPath = `circle(0px at ${x}px ${y}px)`;
+        document.body.appendChild(overlay);
+
+        try {
+          sessionStorage.setItem("pt-color", color);
+        } catch {}
+
+        const go = () => location.assign(url.href);
+        overlay.addEventListener("transitionend", go, { once: true });
+        setTimeout(go, 700); // fallback if the transition never fires
+
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            overlay.style.clipPath = `circle(${r}px at ${x}px ${y}px)`;
+          }),
+        );
+      });
+
+      // Back/forward from the bfcache restores the old DOM: clear any
+      // leftover overlay so the page isn't stuck behind a colour wall.
+      addEventListener("pageshow", (e) => {
+        if (!e.persisted) return;
+        navigating = false;
+        html.classList.remove("pt-cover", "pt-collapse");
+        document.querySelectorAll(".pt-expand").forEach((n) => n.remove());
+        try {
+          sessionStorage.removeItem("pt-color");
+        } catch {}
+      });
+    </script>
   </body>
 </html>

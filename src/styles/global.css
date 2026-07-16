@@ -141,6 +141,42 @@ h1, h2, h3, h4 {
 }
 
 /* ==========================================================================
+   Page transitions
+   Clicking an internal link grows a circle of the card's accent colour (or
+   the primary green) until it covers the viewport; the next page arrives
+   fully covered and collapses the colour back into the centre. The cover
+   class is applied by an inline head script before first paint so the new
+   page never flashes through. See BaseLayout.astro for the scripts.
+   ========================================================================== */
+
+.pt-expand {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  transition: clip-path 0.5s var(--ease-out);
+}
+
+html.pt-cover::before,
+html.pt-collapse::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: var(--pt-color, var(--c-green));
+}
+
+html.pt-collapse::before {
+  animation: pt-collapse 0.55s var(--ease-out) forwards;
+}
+
+@keyframes pt-collapse {
+  from { clip-path: circle(150% at 50% 50%); }
+  to { clip-path: circle(0% at 50% 50%); }
+}
+
+/* ==========================================================================
    Layout primitives
    ========================================================================== */
 
