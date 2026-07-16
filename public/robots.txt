@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://devmello.dev/sitemap-index.xml
+Sitemap: https://blog.devmello.xyz/sitemap-index.xml

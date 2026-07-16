@@ -9,8 +9,8 @@ export const site = {
     "A journal of the projects I'm building, the things I'm learning, and the occasional detour.",
   author: "DevMello",
   email: "pranavy2008@gmail.com",
-  // Used for canonical URLs, RSS and sitemap. Update before deploying.
-  url: "https://devmello.dev",
+  // Used for canonical URLs, RSS and sitemap.
+  url: "https://blog.devmello.xyz",
   locale: "en",
   nav: [
     { label: "Writing", href: "/blog" },

@@ -95,11 +95,37 @@ src/
 
 ## Deploying
 
-`npm run build` emits a static site to `dist/`. It'll drop onto Netlify, Vercel, Cloudflare Pages
-or GitHub Pages with no adapter. Two things to do first:
+Fully static — `npm run build` emits plain HTML to `dist/` with no adapter and no Node runtime.
+All client scripts are small enough that Astro inlines them, so the build ships **zero JavaScript
+files**; the only asset request is one stylesheet.
 
-1. Set `url` in `src/site.config.ts` to the real domain.
-2. Update the `Sitemap:` line in `public/robots.txt` to match.
+This repo is set up for **GitHub Pages at `blog.devmello.xyz`**, deployed by
+`.github/workflows/deploy.yml` on every push to `main`.
+
+### First-time setup
+
+1. **Repo → Settings → Pages → Source: "GitHub Actions"** (not "Deploy from a branch").
+   The workflow won't publish until this is set.
+2. **DNS**: add a `CNAME` record for `blog` pointing at `devmello.github.io`.
+3. **Settings → Pages → Custom domain**: enter `blog.devmello.xyz`, then tick
+   *Enforce HTTPS* once the certificate is issued (can take a few minutes).
+
+### Two files that matter more than they look
+
+- **`public/.nojekyll`** — without it, GitHub Pages runs the output through Jekyll, which
+  **ignores directories starting with `_`**. Astro puts its CSS in `_astro/`, so the whole site
+  would render unstyled. Don't delete this.
+- **`public/CNAME`** — carries the custom domain through each deploy.
+
+### Moving to a different domain or host
+
+The site reads its URL from one place. Change `url` in `src/site.config.ts`, update the
+`Sitemap:` line in `public/robots.txt` and `public/CNAME` to match, and rebuild.
+
+Everything also works as-is on Netlify, Vercel or Cloudflare Pages — build `npm run build`,
+publish `dist/`. One caveat: internal links are root-relative (`/blog`, `/rss.xml`), so serving
+the site from a **subpath** (e.g. `user.github.io/blog`) would need a `base` in
+`astro.config.mjs` and those links made base-aware. A root domain needs none of that.
 
 ## Design credit
 
