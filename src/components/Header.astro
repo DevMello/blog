@@ -12,28 +12,52 @@ const isActive = (href: string) => path === href || path.startsWith(href + "/");
       <span class="logo__text">{site.title}</span>
     </a>
 
-    <nav class="nav" aria-label="Main">
-      <ul class="nav__list">
-        {
-          site.nav.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                class="nav__link"
-                aria-current={isActive(item.href) ? "page" : undefined}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+    <div class="header__actions">
+      <nav class="nav" aria-label="Main">
+        <ul class="nav__list">
+          {
+            site.nav.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  class="nav__link"
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
 
-    <button class="burger" type="button" aria-expanded="false" aria-controls="mobile-nav">
-      <span class="burger__label">Menu</span>
-      <span class="burger__bars" aria-hidden="true"><span></span><span></span></span>
-    </button>
+      <button class="theme-toggle" type="button" aria-label="Switch theme" hidden>
+        <svg class="theme-toggle__sun" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="3.25" fill="currentColor"></circle>
+          <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="8" y1="0.75" x2="8" y2="2.5" />
+            <line x1="8" y1="13.5" x2="8" y2="15.25" />
+            <line x1="0.75" y1="8" x2="2.5" y2="8" />
+            <line x1="13.5" y1="8" x2="15.25" y2="8" />
+            <line x1="2.87" y1="2.87" x2="4.11" y2="4.11" />
+            <line x1="11.89" y1="11.89" x2="13.13" y2="13.13" />
+            <line x1="2.87" y1="13.13" x2="4.11" y2="11.89" />
+            <line x1="11.89" y1="4.11" x2="13.13" y2="2.87" />
+          </g>
+        </svg>
+        <svg class="theme-toggle__moon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M13.5 9.8A6 6 0 0 1 6.2 2.5a6 6 0 1 0 7.3 7.3z"
+            fill="currentColor"
+          ></path>
+        </svg>
+      </button>
+
+      <button class="burger" type="button" aria-expanded="false" aria-controls="mobile-nav">
+        <span class="burger__label">Menu</span>
+        <span class="burger__bars" aria-hidden="true"><span></span><span></span></span>
+      </button>
+    </div>
   </div>
 
   <div class="mobile-nav" id="mobile-nav" hidden>
@@ -92,6 +116,12 @@ const isActive = (href: string) => path === href || path.startsWith(href + "/");
 
   .logo:hover .logo__dot { background: var(--c-pink); transform: scale(1.25) rotate(90deg); }
 
+  .header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   .nav__list {
     display: flex;
     align-items: center;
@@ -99,6 +129,32 @@ const isActive = (href: string) => path === href || path.startsWith(href + "/");
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--c-dark);
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease-out), transform var(--dur) var(--ease-spring);
+  }
+
+  .theme-toggle:hover { background: var(--c-yellow); transform: rotate(45deg); }
+
+  /* Sun in light mode, moon in dark — tracking both the explicit toggle and
+     the system default, same cascade as the tokens in global.css. */
+  .theme-toggle__moon { display: none; }
+  :global(html[data-theme="dark"]) .theme-toggle__sun { display: none; }
+  :global(html[data-theme="dark"]) .theme-toggle__moon { display: block; }
+
+  @media (prefers-color-scheme: dark) {
+    :global(html:not([data-theme="light"])) .theme-toggle__sun { display: none; }
+    :global(html:not([data-theme="light"])) .theme-toggle__moon { display: block; }
   }
 
   .nav__link {
@@ -192,4 +248,72 @@ const isActive = (href: string) => path === href || path.startsWith(href + "/");
       burger?.setAttribute("aria-expanded", "false");
     }
   });
+
+  // Theme toggle. The pre-paint script in BaseLayout stamps a stored choice
+  // on <html> before CSS resolves; this only has to flip and persist it.
+  // The button ships hidden because without JS it would do nothing.
+  const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
+  const scheme = window.matchMedia("(prefers-color-scheme: dark)");
+  const themeColors = { light: "#fff7f0", dark: "#171210" };
+
+  const effectiveTheme = (): "light" | "dark" => {
+    const set = document.documentElement.dataset.theme;
+    return set === "light" || set === "dark" ? set : scheme.matches ? "dark" : "light";
+  };
+
+  const reflectTheme = () => {
+    const theme = effectiveTheme();
+    // An explicit choice can disagree with the system, so the media
+    // attributes on these can't be trusted — point both at the live theme.
+    document
+      .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+      .forEach((m) => (m.content = themeColors[theme]));
+    toggle?.setAttribute(
+      "aria-label",
+      theme === "dark" ? "Switch to light theme" : "Switch to dark theme",
+    );
+  };
+
+  toggle?.addEventListener("click", () => {
+    const next = effectiveTheme() === "dark" ? "light" : "dark";
+    const apply = () => {
+      document.documentElement.dataset.theme = next;
+      try {
+        localStorage.setItem("theme", next);
+      } catch {}
+      reflectTheme();
+    };
+
+    // The new palette sweeps out from the button as a growing circle —
+    // the same wipe language as the page transitions. global.css disables
+    // the default cross-fade; reduced motion and older browsers flip flat.
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || !document.startViewTransition) {
+      apply();
+      return;
+    }
+
+    const rect = toggle.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+    document.startViewTransition(apply).ready.then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+        {
+          duration: 500,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          pseudoElement: "::view-transition-new(root)",
+        },
+      );
+    });
+  });
+
+  scheme.addEventListener("change", reflectTheme);
+
+  if (toggle) {
+    toggle.hidden = false;
+    reflectTheme();
+  }
 </script>

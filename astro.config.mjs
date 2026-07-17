@@ -52,8 +52,10 @@ export default defineConfig({
       rehypeTableWrap,
     ],
     shikiConfig: {
-      // Light theme to sit on the warm beige ground.
-      theme: "github-light",
+      // Both themes are emitted as CSS custom properties (defaultColor off);
+      // global.css activates whichever matches the current site theme.
+      themes: { light: "github-light", dark: "github-dark" },
+      defaultColor: false,
       wrap: false,
     },
   },

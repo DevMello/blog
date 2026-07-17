@@ -40,6 +40,18 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
     <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
     <meta name="generator" content={Astro.generator} />
 
+    <!-- Runs before first paint: a stored theme choice is stamped on <html>
+         so the page never flashes the wrong scheme. No stored choice means
+         the CSS prefers-color-scheme default applies. -->
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem("theme");
+          if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Runs before first paint: if the previous page left a transition
          colour, cover the viewport with it so the new page never flashes.
          The module script below collapses the cover once the page is in. -->
@@ -77,7 +89,10 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
-    <meta name="theme-color" content="#fff7f0" />
+    <!-- Media attributes cover the no-JS case; the header's toggle script
+         rewrites both when an explicit theme overrides the system one. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff7f0" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171210" />
 
     <!-- Space Grotesk stands in for the reference site's proprietary PolySans -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
