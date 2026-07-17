@@ -22,7 +22,17 @@ const baseFields = {
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
-  schema: z.object(baseFields),
+  schema: z.object({
+    ...baseFields,
+    /**
+     * Work in progress: listed on /drafts and readable at its URL, but kept out
+     * of /blog, tag pages, the homepage and RSS. Distinct from `draft`, which
+     * hides an entry everywhere but dev.
+     */
+    wip: z.boolean().default(false),
+    /** Optional completion percentage, drawn as a bar on the draft card. */
+    progress: z.number().int().min(0).max(100).optional(),
+  }),
 });
 
 const projects = defineCollection({

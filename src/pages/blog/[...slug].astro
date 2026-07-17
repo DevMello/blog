@@ -2,14 +2,16 @@
 import { render } from "astro:content";
 import type { GetStaticPaths } from "astro";
 import PostLayout from "../../layouts/PostLayout.astro";
-import { getPosts, type BlogPost } from "../../lib/content";
+import { getPostPaths, getPosts, type BlogPost } from "../../lib/content";
 
 export const getStaticPaths = (async () => {
-  const posts = await getPosts();
+  // WIP posts build a page here too — /drafts links straight at these URLs.
+  const [all, published] = await Promise.all([getPostPaths(), getPosts()]);
 
-  return posts.map((post) => {
+  return all.map((post) => {
     // Related = shares the most tags, falling back to the newest others.
-    const scored = posts
+    // Only published posts are suggested; a draft is no one's next read.
+    const scored = published
       .filter((p) => p.id !== post.id)
       .map((p) => ({
         post: p,

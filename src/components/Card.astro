@@ -16,9 +16,14 @@ const accent = data.accent ?? accentFor(entry.id);
 const href = urlFor(entry);
 const isProject = entry.collection === "projects";
 const status = isProject ? (data as any).status : null;
+
+const wip = !isProject && (data as any).wip === true;
+const progress = wip ? ((data as any).progress as number | undefined) : undefined;
+// A draft's headline date is when it was last worked on, not when it was started.
+const shown = wip ? (data.updated ?? data.date) : data.date;
 ---
 
-<article class:list={["card", { "card--wide": wide }]} data-accent={accent}>
+<article class:list={["card", { "card--wide": wide, "card--wip": wip }]} data-accent={accent}>
   <div class="card__thumb">
     {
       data.cover ? (
@@ -31,9 +36,17 @@ const status = isProject ? (data as any).status : null;
 
   <div class="card__body">
     <div class="card__meta">
-      <time datetime={isoDate(data.date)}>{formatDate(data.date)}</time>
+      <time datetime={isoDate(shown)}>{wip ? `Updated ${formatDate(shown)}` : formatDate(shown)}</time>
       <span aria-hidden="true">·</span>
-      {status ? <span class="card__status">{status}</span> : <span>{readTime(entry)}</span>}
+      {
+        status ? (
+          <span class="card__status">{status}</span>
+        ) : wip ? (
+          <span class="card__status card__status--wip">Draft</span>
+        ) : (
+          <span>{readTime(entry)}</span>
+        )
+      }
     </div>
 
     <h3 class="card__title">
@@ -41,6 +54,24 @@ const status = isProject ? (data as any).status : null;
     </h3>
 
     <p class="card__excerpt">{data.description}</p>
+
+    {
+      progress !== undefined && (
+        <div class="card__progress">
+          <div
+            class="card__progress-track"
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label={`${data.title} is ${progress}% written`}
+          >
+            <div class="card__progress-fill" style={`width: ${progress}%`} />
+          </div>
+          <span class="card__progress-label">{progress}%</span>
+        </div>
+      )
+    }
 
     {
       data.tags.length > 0 && (
@@ -53,7 +84,7 @@ const status = isProject ? (data as any).status : null;
     }
 
     <span class="card__more">
-      {isProject ? "See the build" : "Read it"}
+      {isProject ? "See the build" : wip ? "Read the draft" : "Read it"}
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
         <path
           d="M1 13L13 1M13 1H4M13 1v9"
@@ -74,6 +105,45 @@ const status = isProject ? (data as any).status : null;
     letter-spacing: var(--ls-wide);
     font-weight: 600;
     font-size: 0.65rem;
+  }
+
+  /* Drafts read as unfinished at a glance: dashed frame, pill on the status. */
+  .card--wip { border-style: dashed; }
+
+  .card__status--wip {
+    padding: 0.1rem 0.5rem;
+    border: 1.5px solid var(--c-dark);
+    border-radius: var(--radius-pill);
+    background: var(--c-yellow);
+    color: var(--c-dark);
+  }
+
+  .card__progress { display: flex; align-items: center; gap: 0.6rem; }
+
+  .card__progress-track {
+    flex: 1;
+    height: 0.6rem;
+    border: 1.5px solid var(--c-dark);
+    border-radius: var(--radius-pill);
+    background: var(--c-grey-light);
+    overflow: hidden;
+  }
+
+  .card__progress-fill {
+    height: 100%;
+    background: var(--accent, var(--c-orange));
+    border-right: 1.5px solid var(--c-dark);
+    border-radius: var(--radius-pill);
+  }
+
+  /* A 0% fill has no width to draw a border against — hide the stub. */
+  .card__progress-fill[style*="width: 0%"] { border-right: 0; }
+
+  .card__progress-label {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-muted);
   }
 
   .card__tags {

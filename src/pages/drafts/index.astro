@@ -1,0 +1,79 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Card from "../../components/Card.astro";
+import { getDrafts } from "../../lib/content";
+
+const drafts = await getDrafts();
+
+// Rough average of what's declared, so the header can say something honest
+// about the shelf as a whole. Posts without a `progress` sit this one out.
+const scored = drafts.filter((d) => d.data.progress !== undefined);
+const avg =
+  scored.length > 0
+    ? Math.round(scored.reduce((sum, d) => sum + (d.data.progress ?? 0), 0) / scored.length)
+    : null;
+---
+
+<BaseLayout
+  title="Drafts"
+  description="Posts I'm still writing — unfinished, out in the open."
+  noindex
+>
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">
+        {`${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"}`}
+        {avg !== null && <span class="muted">&nbsp;· {avg}% done on average</span>}
+      </p>
+      <h1 class="display page-title">Drafts</h1>
+      <p class="lead page-lead">
+        Things I'm part-way through. They're unfinished on purpose — half-formed arguments, missing
+        sections, conclusions I haven't reached yet. Read them if you like watching the sausage get
+        made. They land in <a href="/blog">the writing</a> when they're done.
+      </p>
+    </div>
+  </section>
+
+  <section class="section wrap" aria-labelledby="all-drafts">
+    <h2 id="all-drafts" class="sr-only">All drafts</h2>
+
+    {
+      drafts.length > 0 ? (
+        <div class="card-grid">
+          {drafts.map((draft) => (
+            <Card entry={draft} />
+          ))}
+        </div>
+      ) : (
+        <p class="empty">
+          Nothing on the workbench right now. Add <code>wip: true</code> to a post in{" "}
+          <code>src/content/blog/</code> and it'll show up here.
+        </p>
+      )
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .page-head { padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+  .page-title { margin-top: 1rem; }
+  .page-lead { margin-top: 1.5rem; color: var(--c-muted); max-width: 52ch; }
+  .page-lead a { color: var(--c-dark); text-decoration: underline; text-underline-offset: 2px; }
+
+  .empty {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--c-muted);
+    border: var(--stroke) dashed var(--c-dark);
+    border-radius: var(--radius);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

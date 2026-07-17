@@ -6,8 +6,10 @@ import { urlFor } from "../lib/content";
 
 export async function GET(context: APIContext) {
   // Query directly rather than via getPosts() so drafts are excluded even in dev.
+  // WIP posts are public on /drafts but stay out of the feed — subscribers get
+  // notified once, when the post is actually finished.
   const [posts, projects] = await Promise.all([
-    getCollection("blog", ({ data }) => !data.draft),
+    getCollection("blog", ({ data }) => !data.draft && !data.wip),
     getCollection("projects", ({ data }) => !data.draft),
   ]);
 

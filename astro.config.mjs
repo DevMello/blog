@@ -7,12 +7,17 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExternalLinks from "rehype-external-links";
 import remarkGfm from "remark-gfm";
 import { rehypeTableWrap } from "./src/plugins/rehype-table-wrap.mjs";
+import { noindexPaths } from "./src/lib/wip-paths.mjs";
 import { site } from "./src/site.config.ts";
+
+// Drafts are noindex'd, so listing them in the sitemap would send search engines
+// mixed signals. Resolved once at config time rather than per-URL.
+const excluded = new Set(noindexPaths().map((path) => new URL(path, site.url).href));
 
 // https://astro.build/config
 export default defineConfig({
   site: site.url,
-  integrations: [mdx(), sitemap()],
+  integrations: [mdx(), sitemap({ filter: (page) => !excluded.has(page) })],
   markdown: {
     remarkPlugins: [remarkGfm],
     rehypePlugins: [

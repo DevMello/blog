@@ -20,8 +20,11 @@ const accent = data.accent ?? accentFor(entry.id);
 const isProject = entry.collection === "projects";
 const project = isProject ? (data as any) : null;
 
-const backHref = isProject ? "/projects" : "/blog";
-const backLabel = isProject ? "All projects" : "All writing";
+const wip = !isProject && (data as any).wip === true;
+const progress = wip ? ((data as any).progress as number | undefined) : undefined;
+
+const backHref = isProject ? "/projects" : wip ? "/drafts" : "/blog";
+const backLabel = isProject ? "All projects" : wip ? "All drafts" : "All writing";
 
 // Article structured data for search results.
 const jsonLd = {
@@ -44,7 +47,7 @@ const jsonLd = {
   type="article"
   publishedTime={data.date}
   modifiedTime={data.updated}
-  noindex={data.draft}
+  noindex={data.draft || wip}
 >
   <div class="progress" aria-hidden="true"><div class="progress__bar"></div></div>
 
@@ -64,6 +67,37 @@ const jsonLd = {
         </a>
 
         {data.draft && <p class="draft-flag">Draft — not listed publicly</p>}
+
+        {
+          wip && (
+            <aside class="wip-banner" aria-labelledby="wip-title">
+              <p id="wip-title" class="wip-banner__title">
+                <span class="wip-banner__dot" aria-hidden="true" />
+                Still being written
+              </p>
+              <p class="wip-banner__body">
+                This one's unfinished — rough edges, gaps, and bits that may change or be cut. It's
+                here because the thinking is worth sharing before it's polished. It'll move to{" "}
+                <a href="/blog">the writing</a> once it's done.
+              </p>
+              {progress !== undefined && (
+                <div class="wip-banner__progress">
+                  <div
+                    class="wip-banner__track"
+                    role="progressbar"
+                    aria-valuenow={progress}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-label={`${progress}% written`}
+                  >
+                    <div class="wip-banner__fill" style={`width: ${progress}%`} />
+                  </div>
+                  <span class="wip-banner__label">{progress}% there</span>
+                </div>
+              )}
+            </aside>
+          )
+        }
 
         <h1 class="post-title">{data.title}</h1>
         <p class="lead post-lead">{data.description}</p>
@@ -216,6 +250,77 @@ const jsonLd = {
     background: var(--c-yellow);
     font-size: var(--fs-xs);
     font-weight: 600;
+  }
+
+  /* Public "this isn't finished" notice. Louder than .draft-flag on purpose —
+     a reader arriving cold needs to know before they start, not after. */
+  .wip-banner {
+    margin-bottom: 2rem;
+    padding: 1.25rem 1.5rem;
+    border: var(--stroke) dashed var(--c-dark);
+    border-radius: var(--radius);
+    background: var(--c-grey-light);
+    max-width: 44ch;
+  }
+
+  .wip-banner__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+  }
+
+  .wip-banner__dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--accent, var(--c-orange));
+    border: 1.5px solid var(--c-dark);
+    flex: none;
+  }
+
+  .wip-banner__body {
+    margin-top: 0.6rem;
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--c-muted);
+  }
+
+  .wip-banner__body a { text-decoration: underline; text-underline-offset: 2px; }
+
+  .wip-banner__progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .wip-banner__track {
+    flex: 1;
+    height: 0.7rem;
+    border: 1.5px solid var(--c-dark);
+    border-radius: var(--radius-pill);
+    background: var(--c-beige);
+    overflow: hidden;
+  }
+
+  .wip-banner__fill {
+    height: 100%;
+    background: var(--accent, var(--c-orange));
+    border-right: 1.5px solid var(--c-dark);
+    border-radius: var(--radius-pill);
+  }
+
+  .wip-banner__fill[style*="width: 0%"] { border-right: 0; }
+
+  .wip-banner__label {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex: none;
   }
 
   .post-title {

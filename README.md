@@ -41,7 +41,23 @@ Your content here.
 | `coverAlt` | no | Alt text for `cover`. Leave empty if the image is decorative |
 | `featured` | no | Pins to the top of the homepage |
 | `draft` | no | Visible in `npm run dev`, excluded from builds and RSS |
+| `wip` | no | Blog only. Lists the post on `/drafts` — see below |
+| `progress` | no | Blog only. `0`–`100`; draws a progress bar on the draft card |
 | `accent` | no | `orange` \| `blue` \| `pink` \| `purple` \| `yellow` \| `green` |
+
+#### `draft` vs `wip`
+
+These sound alike and do opposite things:
+
+- **`draft: true`** is *private*. The entry is hidden everywhere except `npm run dev`. Use it for
+  something not ready to be seen at all.
+- **`wip: true`** is *public*. The post gets a real page at `/blog/<slug>/` with a "still being
+  written" banner, and is listed on `/drafts` — but stays out of `/blog`, tag pages, the homepage
+  and RSS, and is `noindex`ed. Use it to think out loud in public.
+
+Setting both means `draft` wins, since it's the stricter of the two. Drop `wip` when the post is
+done and it moves to `/blog` and goes out over RSS — which is the one and only time subscribers
+hear about it.
 
 Projects live in `src/content/projects/` and take the same fields plus:
 

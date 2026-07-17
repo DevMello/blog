@@ -14,6 +14,7 @@ export const site = {
   locale: "en",
   nav: [
     { label: "Writing", href: "/blog" },
+    { label: "Drafts", href: "/drafts" },
     { label: "Projects", href: "/projects" },
     { label: "About", href: "/about" },
   ],

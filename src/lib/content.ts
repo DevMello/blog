@@ -18,9 +18,36 @@ function byFeaturedThenDate(a: AnyEntry, b: AnyEntry) {
   return byDateDesc(a, b);
 }
 
+/** Last meaningful activity — what /drafts sorts on, so the freshest work is on top. */
+function lastTouched(entry: AnyEntry) {
+  return (entry.data.updated ?? entry.data.date).valueOf();
+}
+
+/** Published posts only. WIP posts live on /drafts and are excluded here. */
 export async function getPosts(): Promise<BlogPost[]> {
-  const posts = await getCollection("blog", ({ data }) => showDrafts || !data.draft);
+  const posts = await getCollection(
+    "blog",
+    ({ data }) => (showDrafts || !data.draft) && !data.wip,
+  );
   return posts.sort(byDateDesc);
+}
+
+/** Posts marked `wip: true` — the /drafts shelf, most recently touched first. */
+export async function getDrafts(): Promise<BlogPost[]> {
+  const drafts = await getCollection(
+    "blog",
+    ({ data }) => (showDrafts || !data.draft) && data.wip,
+  );
+  return drafts.sort((a, b) => lastTouched(b) - lastTouched(a));
+}
+
+/**
+ * Every post that should build a page — published *and* WIP. Route generation
+ * uses this rather than getPosts(), otherwise WIP posts would 404 from /drafts.
+ */
+export async function getPostPaths(): Promise<BlogPost[]> {
+  const [posts, drafts] = await Promise.all([getPosts(), getDrafts()]);
+  return [...posts, ...drafts];
 }
 
 export async function getProjects(): Promise<Project[]> {
