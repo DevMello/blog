@@ -17,6 +17,9 @@ const excluded = new Set(noindexPaths().map((path) => new URL(path, site.url).hr
 // https://astro.build/config
 export default defineConfig({
   site: site.url,
+  // Astro ignores the PORT env var on its own; honouring it here lets tooling
+  // assign a free port when the default is already taken.
+  server: process.env.PORT ? { port: Number(process.env.PORT) } : {},
   integrations: [mdx(), sitemap({ filter: (page) => !excluded.has(page) })],
   markdown: {
     remarkPlugins: [remarkGfm],

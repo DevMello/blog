@@ -8,19 +8,8 @@
         "run",
         "dev"
       ],
-      "port": 4321
-    },
-    {
-      "name": "blog-4335",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev",
-        "--",
-        "--port",
-        "4335"
-      ],
-      "port": 4335
+      "port": 4321,
+      "autoPort": true
     }
   ]
 }

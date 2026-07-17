@@ -298,16 +298,22 @@ const isActive = (href: string) => path === href || path.startsWith(href + "/");
     const y = rect.top + rect.height / 2;
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
 
-    document.startViewTransition(apply).ready.then(() => {
-      document.documentElement.animate(
-        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-        {
-          duration: 500,
-          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-          pseudoElement: "::view-transition-new(root)",
-        },
-      );
-    });
+    document.startViewTransition(apply).ready.then(
+      () => {
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+          {
+            duration: 500,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+            pseudoElement: "::view-transition-new(root)",
+          },
+        );
+      },
+      // `ready` rejects when the browser skips the transition (hidden tab,
+      // a second toggle mid-flight). The theme still flips — apply() runs
+      // either way — so there is nothing to recover.
+      () => {},
+    );
   });
 
   scheme.addEventListener("change", reflectTheme);
