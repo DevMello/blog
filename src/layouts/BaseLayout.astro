@@ -102,6 +102,7 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
       const html = document.documentElement;
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       let navigating = false;
+      let navTimer: ReturnType<typeof setTimeout>;
 
       // Arriving covered (class set by the inline head script): collapse the
       // colour into the centre of the page.
@@ -156,9 +157,11 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
           sessionStorage.setItem("pt-color", color);
         } catch {}
 
-        const go = () => location.assign(url.href);
+        const go = () => {
+          if (navigating) location.assign(url.href);
+        };
         overlay.addEventListener("transitionend", go, { once: true });
-        setTimeout(go, 700); // fallback if the transition never fires
+        navTimer = setTimeout(go, 700); // fallback if the transition never fires
 
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
@@ -167,11 +170,14 @@ const ogImage = new URL(image, Astro.site ?? "http://localhost:4321");
         );
       });
 
-      // Back/forward from the bfcache restores the old DOM: clear any
-      // leftover overlay so the page isn't stuck behind a colour wall.
+      // Back/forward from the bfcache restores the old DOM with the pending
+      // fallback timer still armed: disarm it and clear any leftover overlay
+      // so the restored page neither re-navigates nor sits behind a colour
+      // wall.
       addEventListener("pageshow", (e) => {
         if (!e.persisted) return;
         navigating = false;
+        clearTimeout(navTimer);
         html.classList.remove("pt-cover", "pt-collapse");
         document.querySelectorAll(".pt-expand").forEach((n) => n.remove());
         try {
