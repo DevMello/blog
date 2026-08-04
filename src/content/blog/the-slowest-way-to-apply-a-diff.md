@@ -2,6 +2,7 @@
 title: typethru, or the slowest possible way to apply a diff
 description: I shipped a tool that makes you retype everything your AI wrote before it counts. On purpose. People apparently want this, including me.
 date: 2026-08-04
+updated: 2026-08-04
 tags: ["git", "ai", "tooling", "typethru"]
 accent: pink
 ---
@@ -43,7 +44,7 @@ The details are where the fun is:
 
 - **Lockfiles auto-apply.** Nobody's mental model has ever improved by retyping `package-lock.json`. Same for binaries, whitespace-only hunks, and anything you glob in config. `typethru` respects your time, within the obvious constraint that it is a tool for retyping code you already have.
 - **Ctrl-V does nothing.** Pasting is ignored at the bracketed-paste level. That's not a bug, that's the entire product.
-- **No gamification.** No ranks, no streaks, no live WPM ticking in the corner while you sweat. gittype already does the game thing well. Accuracy and WPM show up once, at the end, in past tense, like a report card you can throw away.
+- **No gamification.** No ranks, no streaks, ~~no live WPM ticking in the corner while you sweat~~. gittype already does the game thing well. ~~Accuracy and WPM show up once, at the end, in past tense, like a report card you can throw away.~~ **Edit (v0.2.0):** there is now live WPM ticking in the corner while you sweat. See the update below.
 - **Crash-safe.** `typethru restore` brings back the agent's version at any point — mid-session, after a crash, after you rage-quit. First rule of the design doc: recovery must be boring.
 - **`typethru practice HEAD`** if you want the typing without the ceremony — read-only, never touches your tree.
 
@@ -69,6 +70,19 @@ typethru takes no position. It's ergonomics for a workflow people have already c
 
 (I almost named it `meatgate`, as a nod to the meat proxy essay. The design log's verdict: "joke outlives the joke." `typethru` it is.)
 
+## Update, same day: v0.2.0
+
+Shipping v0.1 exposed the obvious problem within hours: **the em dash isn't on your keyboard.** AI writes em dashes the way the rest of us write spaces — and v0.1 cheerfully demanded you reproduce one, character-exact, using a key that does not exist. Same for curly quotes, the ellipsis, and the non-breaking space; the model's entire signature punctuation set is unkeyboardable.
+
+So v0.2.0 adds compose sequences: `--` becomes an em or en dash, `...` becomes an ellipsis, straight quotes become curly ones, and a one-line hint explains all this whenever a hunk needs it (`^N` for never-show-again once you've internalized it). The tool that makes you type what the AI wrote now teaches you to type the characters only AIs use 😂.
+
+Two confessions also shipped:
+
+- The "no live WPM" principle lasted one afternoon. There's now a live accuracy/WPM/elapsed readout in the footer — dim, at the screen edge, and `git config typethru.livestats false` brings the monastery back. The design doc records this as a "revision", which is the polite word for caving.
+- Completed lines now get syntax highlighting (Pygments, rendered in your terminal's own palette). Ghost text stays gray until you've typed it, so the color is *earned* — the file fills in with color as you go, which turned out to be the best progress bar the tool never had.
+
+Byte-identity, crash safety and the test gate all still hold — 102 tests on the [v0.2.0 release](https://github.com/DevMello/typethru/releases/tag/v0.2.0).
+
 ## What I'd change
 
 The session can't tell your manual edits from the agent's — it gates everything pending against HEAD, so you run it when the diff *is* the thing you want to earn back. Renames show up as delete-plus-new-file, which is honest but slightly silly. And as a full-screen TUI it has no screen-reader story at all, which is the one limitation I actually feel bad about rather than finding funny.
@@ -77,4 +91,4 @@ Whether I'll still be retyping my diffs in a month, I genuinely don't know. Ask 
 
 ## TLDR
 
-Everyone spent last week arguing that you should retype your AI's code by hand; several people were already doing it manually with git gymnastics. So I shipped [typethru](https://github.com/DevMello/typethru): it reverts your agent's diff and makes you type it back, keystroke-verified, byte-identical at the end, lockfiles exempt, pasting disabled, no gamification, crash-safe. Built largely by the AI it's designed to distrust. `pip install git+https://github.com/DevMello/typethru` if you'd like to feel your fingers again.
+Everyone spent last week arguing that you should retype your AI's code by hand; several people were already doing it manually with git gymnastics. So I shipped [typethru](https://github.com/DevMello/typethru): it reverts your agent's diff and makes you type it back, keystroke-verified, byte-identical at the end, lockfiles exempt, pasting disabled, no gamification, crash-safe. Built largely by the AI it's designed to distrust. `pip install git+https://github.com/DevMello/typethru` if you'd like to feel your fingers again. Same-day v0.2.0: em dashes are typeable as `--` (the AI's favourite character isn't on your keyboard, who knew), plus live stats and earned-color syntax highlighting.
